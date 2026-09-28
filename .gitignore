@@ -35,7 +35,7 @@ htmlcov/
 .ruff_cache/
 
 # Datasets & Checkpoints
-data/
+# data/
 *.bin
 *.pt
 *.pth
@@ -61,7 +61,7 @@ final_step_by_step_implementation_plan.md
 implementation_plan.md
 training_plan.md
 logs/
-data/
+# data/
 artifacts/
 
 # Prerequisites/Outputs

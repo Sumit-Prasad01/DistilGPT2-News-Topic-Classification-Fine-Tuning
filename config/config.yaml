@@ -1,0 +1,60 @@
+# Configuration for DistilGPT2 News Topic Classification
+# Optimized for Laptop GPU: NVIDIA GeForce RTX 3050 (4GB VRAM)
+
+data:
+  dataset_name: "fancyzhx/ag_news"
+  train_size: 2400
+  val_size: 400
+  test_size: 1000
+  max_length: 128
+  seed: 42
+
+model:
+  model_name: "distilgpt2"
+  label_names:
+    - "World"
+    - "Sports"
+    - "Business"
+    - "Sci/Tech"
+
+training:
+  output_dir: "./gpt-news-model"
+  learning_rate: 2.0e-5
+  # RTX 3050 4GB VRAM Optimizations:
+  # Micro-batch size 8 + 2 accumulation steps = Effective batch size 16
+  batch_size: 8
+  gradient_accumulation_steps: 2
+  eval_batch_size: 16
+  num_epochs: 10
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  seed: 42
+  logging_steps: 25
+
+  # Hugging Face Trainer strategy
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  save_total_limit: 1                    # Keep only best checkpoint to save disk and memory
+  load_best_model_at_end: true
+  metric_for_best_model: "f1_weighted"
+
+  # RTX 3050 Ampere GPU Precision & Optimizer
+  fp16: true                             # Enable FP16 mixed precision for Ampere Tensor Cores (saves ~50% VRAM)
+  bf16: false
+  optim: "adamw_torch_fused"             # Fused AdamW kernel minimizes memory round-trips on CUDA
+  gradient_checkpointing: false          # Set true if you wish to increase batch size or max_length without OOM
+
+  # DataLoader Windows & GPU throughput
+  dataloader_num_workers: 0              # 0 avoids Windows spawn memory overhead; C++ collator handles speed
+  dataloader_pin_memory: true            # Fast pinned memory host-to-device transfers
+
+  # C++ Acceleration toggles
+  use_cpp_collator: true
+  use_cpp_metrics: true
+
+mlflow:
+  experiment_name: "DistilGPT2-News-Topic-Classification"
+  tracking_uri: "./mlruns"
+  run_name: "rtx3050-4gb-optimized"
+  log_models: true
+  artifact_dir: "artifacts"

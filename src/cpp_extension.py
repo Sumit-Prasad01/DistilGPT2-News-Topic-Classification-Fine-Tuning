@@ -53,7 +53,7 @@ def load_cpp_ops() -> Optional[object]:
 
         if all(os.path.exists(s) for s in sources):
             logger.info("AOT module not found. Attempting JIT compilation of C++ extensions...")
-            extra_cflags = ["/O2", "/openmp", "/std:c++17"] if sys.platform == "win32" else ["-O3", "-fopenmp", "-std=c++17"]
+            extra_cflags = ["/O2", "/openmp", "/std:c++20", "/bigobj", "/EHsc"] if sys.platform == "win32" else ["-O3", "-fopenmp", "-std=c++20", "-fPIC"]
             extra_ldflags = [] if sys.platform == "win32" else ["-fopenmp"]
 
             _CPP_OPS = load(

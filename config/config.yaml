@@ -54,7 +54,7 @@ training:
 
 mlflow:
   experiment_name: "DistilGPT2-News-Topic-Classification"
-  tracking_uri: "./mlruns"
+  tracking_uri: "sqlite:///mlflow.db"
   run_name: "rtx3050-4gb-optimized"
   log_models: true
   artifact_dir: "artifacts"

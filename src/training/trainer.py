@@ -70,7 +70,17 @@ class NewsClassifierTrainer:
             f"Epochs={num_epochs}, LR={learning_rate}, FP16={fp16_enabled}, Optim={optimizer_choice}"
         )
 
-        # 2026 Hugging Face standard arguments (eval_strategy replaces evaluation_strategy)
+        import inspect
+        sig_params = inspect.signature(TrainingArguments.__init__).parameters
+
+        # Calculate steps for warmup compatibility
+        warmup_ratio = float(getattr(tc, "warmup_ratio", 0.05))
+        dataset_len = len(self.train_dataset) if hasattr(self.train_dataset, "__len__") else 2400
+        steps_per_epoch = max(1, dataset_len // (batch_size * grad_accum))
+        total_steps = steps_per_epoch * num_epochs
+        warmup_steps = max(1, int(total_steps * warmup_ratio))
+
+        # Standard arguments
         args_kwargs = {
             "output_dir": output_dir,
             "learning_rate": learning_rate,
@@ -79,7 +89,6 @@ class NewsClassifierTrainer:
             "per_device_eval_batch_size": eval_batch_size,
             "num_train_epochs": num_epochs,
             "weight_decay": weight_decay,
-            "warmup_ratio": getattr(tc, "warmup_ratio", 0.05),
             "eval_strategy": getattr(tc, "eval_strategy", "epoch"),
             "save_strategy": getattr(tc, "save_strategy", "epoch"),
             "save_total_limit": getattr(tc, "save_total_limit", 1),
@@ -89,13 +98,21 @@ class NewsClassifierTrainer:
             "bf16": bf16_enabled,
             "optim": optimizer_choice,
             "logging_steps": getattr(tc, "logging_steps", 25),
-            "report_to": ["none"],  # We route logging directly via our custom MLflowLoggingCallback
+            "report_to": ["none"],  # Routed directly via MLflowLoggingCallback
             "seed": seed,
             "dataloader_num_workers": getattr(tc, "dataloader_num_workers", 0),
             "dataloader_pin_memory": getattr(tc, "dataloader_pin_memory", True) and is_cuda,
         }
 
-        return TrainingArguments(**args_kwargs)
+        # Add warmup depending on transformers version
+        if "warmup_ratio" in sig_params:
+            args_kwargs["warmup_ratio"] = warmup_ratio
+        elif "warmup_steps" in sig_params:
+            args_kwargs["warmup_steps"] = warmup_steps
+
+        # Safely filter kwargs to only those accepted by current transformers version
+        filtered_kwargs = {k: v for k, v in args_kwargs.items() if k in sig_params}
+        return TrainingArguments(**filtered_kwargs)
 
     def _build_trainer(self) -> Trainer:
         """Instantiate Hugging Face Trainer with callbacks and custom collation."""

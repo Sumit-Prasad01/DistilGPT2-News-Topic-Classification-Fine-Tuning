@@ -4,6 +4,7 @@ Handles logging of hyperparameters, training curves, validation metrics, evaluat
 """
 
 import os
+os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
 from typing import Dict, Any, Optional
 from contextlib import contextmanager
 from utils.logger import get_logger
@@ -33,11 +34,12 @@ class MLflowManager:
             logger.warning("MLflow library is not installed. Experiment tracking is disabled.")
             return
 
-        tracking_uri = getattr(self.config, "tracking_uri", "./mlruns")
+        tracking_uri = getattr(self.config, "tracking_uri", "sqlite:///mlflow.db")
         experiment_name = getattr(self.config, "experiment_name", "DistilGPT2-News-Topic-Classification")
 
         try:
-            os.makedirs(tracking_uri, exist_ok=True)
+            if not tracking_uri.startswith(("sqlite:", "http://", "https://")):
+                os.makedirs(tracking_uri, exist_ok=True)
             mlflow.set_tracking_uri(tracking_uri)
             mlflow.set_experiment(experiment_name)
             logger.info(f"MLflow initialized: Experiment '{experiment_name}' at '{tracking_uri}'")

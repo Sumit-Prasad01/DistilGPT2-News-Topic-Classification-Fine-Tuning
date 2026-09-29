@@ -1,6 +1,7 @@
 # DistilGPT2 News Topic Classification Fine-Tuning
 ### High-Performance Modular Architecture with C++20 Acceleration & MLflow Tracking
 
+[![Hugging Face Model](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-ZyroGod%2Fdistilgpt2--news--topic--classification-FFD21E.svg)](https://huggingface.co/ZyroGod/distilgpt2-news-topic-classification)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Hugging Face](https://img.shields.io/badge/Transformers-5.x-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/)
@@ -13,6 +14,7 @@ An enterprise-grade, production-ready system for fine-tuning causal autoregressi
 ---
 
 ## 📑 Table of Contents
+- [Hugging Face Hub Quickstart](#-hugging-face-hub-quickstart)
 - [Key Results](#-key-results)
 - [Visual Diagnostics](#-visual-diagnostics)
 - [Key Features](#-key-features)
@@ -25,6 +27,57 @@ An enterprise-grade, production-ready system for fine-tuning causal autoregressi
 - [Running Automated Tests](#-running-automated-tests)
 - [Detailed Documentation](#-detailed-documentation)
 - [License](#-license)
+
+---
+
+## 🤗 Hugging Face Hub Quickstart
+
+The champion fine-tuned model checkpoint is publicly available on the Hugging Face Hub: **[`ZyroGod/distilgpt2-news-topic-classification`](https://huggingface.co/ZyroGod/distilgpt2-news-topic-classification)**.
+
+### Option 1: Transformers Pipeline (Recommended)
+
+```python
+from transformers import pipeline
+
+# Load classifier pipeline directly from Hugging Face Hub
+classifier = pipeline("text-classification", model="ZyroGod/distilgpt2-news-topic-classification")
+
+# Predict on news headlines
+headline = "NASA's James Webb Space Telescope discovers oldest galaxy cluster ever observed."
+result = classifier(headline)
+
+print(result)
+# Output: [{'label': 'Sci/Tech', 'score': 0.9852}]
+```
+
+### Option 2: Native PyTorch AutoModel & AutoTokenizer
+
+```python
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+model_id = "ZyroGod/distilgpt2-news-topic-classification"
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForSequenceClassification.from_pretrained(model_id)
+model.eval()
+
+# Causal LM requirement: left-padding alignment
+tokenizer.padding_side = "left"
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
+
+headline = "Wall Street rallies as Federal Reserve signals potential interest rate cuts."
+inputs = tokenizer(headline, return_tensors="pt", truncation=True, max_length=128, padding=True)
+
+with torch.no_grad():
+    outputs = model(**inputs)
+    probabilities = torch.softmax(outputs.logits, dim=-1)[0]
+
+id2label = model.config.id2label
+for idx, prob in enumerate(probabilities):
+    label = id2label.get(str(idx), id2label.get(idx, f"Class {idx}"))
+    print(f"{label:<10s}: {prob.item():.2%}")
+```
 
 ---
 
@@ -207,6 +260,7 @@ DistilGPT2-News-Topic-Classification-Fine-Tuning/
 ├── benchmark.py                    # C++ vs Python speedup benchmarking script
 ├── evaluate.py                     # Standalone CLI model evaluator
 ├── predict.py                      # Interactive / CLI headline classifier
+├── push_to_hf.py                   # Automated Hugging Face Hub publisher & model card generator
 ├── train.py                        # Main CLI fine-tuning pipeline
 ├── requirements.txt                # Pinned project dependencies
 ├── setup.py                        # C++ extension build script
@@ -307,6 +361,12 @@ Compare dynamic collation and inference throughput:
 python benchmark.py
 ```
 
+### 6. Publish Fine-Tuned Model to Hugging Face Hub
+Upload the checkpoint, left-padded tokenizer, evaluation visuals, and generated model card to HF:
+```powershell
+python push_to_hf.py --repo_id "ZyroGod/distilgpt2-news-topic-classification"
+```
+
 ---
 
 ## 🧪 Running Automated Tests
@@ -334,3 +394,8 @@ For in-depth technical specifications and empirical analyses, refer to:
 - 📋 **[`implementation_plan.md`](implementation_plan.md)**: Step-by-step engineering roadmap and notebook transformation blueprint.
 
 ---
+
+## 📜 License
+
+This project is licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+
